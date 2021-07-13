@@ -11,6 +11,7 @@ Coffee Quality Database(CQD)
 
 # Variables
 • country_of_origin – Country where the coffee bean originates from
+
 • aroma – Aroma grade (ranging from 0-10)
 • flavor – Flavour grade (ranging from 0-10)
 • acidity – Acidity grade (ranging from 0-10)
