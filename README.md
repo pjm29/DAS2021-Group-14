@@ -13,11 +13,17 @@ Coffee Quality Database(CQD)
 • country_of_origin – Country where the coffee bean originates from
 
 • aroma – Aroma grade (ranging from 0-10)
+
 • flavor – Flavour grade (ranging from 0-10)
+
 • acidity – Acidity grade (ranging from 0-10)
+
 • category_two_defects – Count of category 2 type defects in the batch of coffee beanstested
+
 • altitiude_mean_meters – Mean altitude of the growers farm (in metres)
+
 • harvested – Year the batch was harvested
+
 • Qualityclass – Quality score for the batch (Good - ≥ 82.5, Poor - <82.5). Note: 82.5 was selected as the cut off as this is the median score for all the batches tested.
 
 # Question
