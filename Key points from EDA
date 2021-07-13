@@ -1,0 +1,27 @@
+A: country_of_origin    
+B: aroma                
+C: flavor               
+D: acidity              
+E: category_two_defects 
+F: altitude_mean_meters 
+G: harvested            
+H: Qualityclass(response)
+
+#about missing data
+drop 1 missing data in column A; 
+replace the missing values in column F by average;
+ignore the column G
+
+#relationship between H and B,C,D
+good quality-> higher aroma grade, flavor grade and scidity grade
+
+#relationship between H and E
+good quality-> more category_two_defects 
+
+#relationship between H and F
+good quality-> slightly higher altitude
+very weak relationship between F and B C D E-> altitude will not have contribution in collinearity-> suggest to keep it in the model fitting part
+
+#relationship between H and G
+no obvious relationship-> suggest to drop it in the model fitting part
+
