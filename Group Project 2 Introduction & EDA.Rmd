@@ -1,0 +1,147 @@
+---
+title: "Group project 2 -- Introduction & EDA"
+author: "wifan"
+date: "2021/7/12"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE, comment = NA)
+```
+
+```{r libraries}
+library(dplyr)
+library(maps)
+library(RColorBrewer)
+library(ggplot2)
+library(tidyverse)
+library(kableExtra)
+library(gridExtra)
+library(moderndive)
+library(skimr)
+library(GGally)
+library(knitr)
+library(janitor)
+```
+
+# Introduction {#sec:intro}
+
+The original data set has 1134 observations with 8 variables, which comes from the Coffee Quality Database(CQD). Each row of data is recorded by batch and it assumes that each batch of tested coffee beans have equal quantity. 
+We used R to handle this data set and renamed it as *'data14.csv'*. Since the term 'Qualityclass' is a binary categorical variable, it can be converted to factor format for further analysis. The overview of original data is shown below. 
+```{r glimpse,echo=FALSE, warning=FALSE}
+data14<-read.csv('D:/graduate/postgraduate/Glasgow/DAS/Group project 2/dataset14.csv')
+data14$country_of_origin<-factor(data14$Qualityclass)
+glimpse(data14)
+```
+**• columns A: country_of_origin**: Locations.  
+**• columns B-F: aroma, flavor, acidity, category_two_defects, altitude_mean_meters**:
+Continuous variables.  
+**• columns G: harvested**:Time.
+**• columns H: Qualityclass**: Categorical variable.
+
+# Exploratory Data Analysis {#sec:EDA}
+
+In order to understand the data, we take a summary of our data set first.
+```{r Summary statistics,echo=FALSE, message=FALSE, out.width = '70%'}
+summary(data14)
+```
+From the information above, we can investigate that there are some missing values scatter in three columns(1 in column 'country_of_origin', 199 in column 'altitude_mean_meters' and 59 in column 'harvested'). Specifically, the 1 missing value in column 'country_of_origin', which altitude and harvested year are also unknown. There is no enough evidence to determine its origin country. And the missing data is a small amount, so we could remove this row for retaining the data integrity. In addition, the number of missing values in other two columns are relatively large, they will be handled in the next steps.Meanwhile, there are no abnormal values. 
+
+After removing the missing value in column 'country_of_origin', we stored it as *'data14_tidy.csv'*
+in R. It still contains 1133 rows and 8 columns and will be used for analyzing in the following part of this report.
+```{r tidy data,echo=FALSE}
+#tidy data
+data14_tidy<-data14[c(-536),]
+```
+
+In this step, we used box plots to explore the relationship between aroma grade, flavor grade, acidity grade and quality class of coffee beans separately.
+```{r aroma;flavor;acidity,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:box} The relationship between aroma,flavor,acidity and quality class", fig.pos = 'H'}
+p1<-ggplot(data14_tidy,aes(x=Qualityclass,y=aroma,fill=Qualityclass))+
+  geom_boxplot()+
+  labs(x='Qualityclass',y='Aroma grade')+
+  theme(legend.position = "none")
+
+p2<-ggplot(data14_tidy,aes(x=Qualityclass,y=flavor,fill=Qualityclass))+
+  geom_boxplot()+
+  labs(x='Qualityclass',y='Flavor grade')+
+  theme(legend.position = "none")
+
+p3<-ggplot(data14_tidy,aes(x=Qualityclass,y=acidity,fill=Qualityclass))+
+  geom_boxplot()+
+  labs(x='Qualityclass',y='Acidity grade')+
+  theme(legend.position = "none")
+
+grid.arrange(p1,p2,p3,ncol=3)
+
+```
+Figure \ref{fig:box} shows that aroma grade, flavor grade and acidity grade of coffee beans in good quality class tend to be higher than that in poor quality class. Meanwhile, there are some outliers in each plot. In terms of this result, these three variables can be considered as influence factors of coffee quality.
+
+Next, table \ref{tab:category_two_defects} indicates the difference of the number of category 2 type defects in each coffee quality class. The number of category 2 type defects in good quality class(582) is slightly more than that in poor quality class(551).
+```{r category_two_defects,echo=FALSE,warning=FALSE}
+my_skim <- skim_with(base = sfl(n = length)) 
+data14_tidy %>%
+group_by(Qualityclass) %>%
+select(category_two_defects, Qualityclass) %>%
+my_skim() %>%
+transmute(Qualityclass=Qualityclass, n=n, ) %>%
+kable(caption = '\\label{tab:category_two_defects} Summary statistics on the number of category 2 type defects by quality class.',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+
+```
+
+For the purpose of observing whether the harvested year of coffee beans is related to the coffee quality class, a bar plot is made to show the change of the proportion of each quality class during the period from 2010 to 2018. Because the amount of missing data in this column is relatively small, we ignored the missing values and analyzed the data roughly.
+```{r harvested year,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:barplot} The proportion of each quality class in every harvested year", fig.pos = 'H'}
+data14.year<-data14_tidy%>%
+  select(harvested,Qualityclass)
+
+ggplot(data14.year[!is.na(data14.year$harvested),],aes(x=harvested,fill=Qualityclass))+
+  geom_bar(aes(y=..prop..),stat='count',position = 'dodge')+
+  labs(x='Harvested year',y='Proportion')
+```
+As shown in the Figure \ref{fig:barplot},there are both fluctuation in the proportion of two quality classes during this period. However, we can not find out the regular trends of the two proportions over time from the figure. For this reason, we could infer that harvested year have a little effect on the coffee quality.
+
+Before explore the relationship between the mean altitude of the growers farm and the coffee quality, we need to work with the large amount of missing values in altitude. There are several ways to fill the missing data. The most common two methods are constant replacement and regression interpolation.
+
+First, we checked the correlation between altitude and previous four explanatory variables in figure \ref{fig:corr}. Unfortunately, the correlation coefficients between altitude and other variables are -0.012, -0.01,0.03 and -0.05 respectively, which are very weak relationship.
+```{r check correlation ,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:corr} Potential factors for altitude", fig.pos = 'H', warning=FALSE, message=FALSE}
+corr <- data14_tidy %>%
+  select(2:6)%>%
+  na.omit()
+ggpairs(corr)
+```
+Then, considering coffee beans from each country should have similar growing environment and geographical conditions, we choose to use average by each country to deal with missing data of altitude from different area.
+```{r deal with missing values,echo=FALSE, warning=FALSE}
+#the number of NA,mean and median 'altitude_mean_meters' term group by countries
+summary_country_altitude<-data14%>%
+  group_by(country_of_origin)%>%
+  summarize(na=sum(is.na(altitude_mean_meters)),mean=mean(altitude_mean_meters,na.rm = TRUE))
+
+
+#build the table
+altitude_by_country<-na.omit(summary_country_altitude)%>%
+kable(caption = '\\label{tab:Altitude by countries} Summary statistics of the altitudes by country.',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+
+
+#replace NA in column 'altitude_mean_meters' by mean
+countries<-unique(na.omit(summary_country_altitude[summary_country_altitude$na!=0,]$country_of_origin))
+for (i in 1:length(countries)){
+  data14_tidy[data14_tidy$country_of_origin==countries[i],]$altitude_mean_meters[is.na(data14_tidy[data14_tidy$country_of_origin==countries[i],]$altitude_mean_meters)]<-
+    summary_country_altitude$mean[which(summary_country_altitude$country_of_origin==countries[i])]
+}
+
+```
+After the process of filling the missing data, a box plot is built for visualizing the effect of altitude on coffee qualify class. Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualify class tend to be slightly higher than that in poor qualify class in general. 
+```{r altitude ,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:box2} Altitude by coffee qualify class", fig.pos = 'H', warning=FALSE, message=FALSE}
+#for clear visualization, removing 11 points which altitude >6000 in the plot
+#nrow(data14_tidy[data14_tidy$altitude_mean_meters>6000,])
+ggplot(data14_tidy[data14_tidy$altitude_mean_meters<=6000,],aes(x=Qualityclass,y=altitude_mean_meters,fill=Qualityclass))+
+  geom_boxplot()+
+  labs(x='Quality class',y='Altitude')
+```
+
+
