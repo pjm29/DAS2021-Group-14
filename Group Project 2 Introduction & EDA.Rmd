@@ -89,7 +89,6 @@ transmute(Qualityclass=Qualityclass, n=n, ) %>%
 kable(caption = '\\label{tab:category_two_defects} Summary statistics on the number of category 2 type defects by quality class.',
 booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
-
 ```
 
 For the purpose of observing whether the harvested year of coffee beans is related to the coffee quality class, a bar plot is made to show the change of the proportion of each quality class during the period from 2010 to 2018. Because the amount of missing data in this column is relatively small, we ignored the missing values and analyzed the data roughly.
@@ -136,7 +135,7 @@ for (i in 1:length(countries)){
 }
 
 ```
-After the process of filling the missing data, a box plot is built for visualizing the effect of altitude on coffee qualify class. Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualify class tend to be slightly higher than that in poor qualify class in general. 
+After the process of filling the missing data, a box plot is built for visualizing the effect of altitude on coffee qualify class. 
 ```{r altitude ,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:box2} Altitude by coffee qualify class", fig.pos = 'H', warning=FALSE, message=FALSE}
 #for clear visualization, removing 11 points which altitude >6000 in the plot
 #nrow(data14_tidy[data14_tidy$altitude_mean_meters>6000,])
@@ -144,5 +143,5 @@ ggplot(data14_tidy[data14_tidy$altitude_mean_meters<=6000,],aes(x=Qualityclass,y
   geom_boxplot()+
   labs(x='Quality class',y='Altitude')
 ```
-
+Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualify class tend to be slightly higher than that in poor qualify class in general. In addition, the mean altitude of the cultivation of good coffee beans is more concentrated than the distribution of poor qualited coffee beans. Therefore, it can be inferred that the average altitude [Good mean] is more suitable for high-quality output of coffee beans. Manufacturers can choose planting locations to improve the quality of coffee beans.
 
