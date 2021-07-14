@@ -53,7 +53,7 @@ After removing the missing value in column 'country_of_origin', we stored it as 
 in R. It still contains 1133 rows and 8 columns and will be used for analyzing in the following part of this report.
 ```{r tidy data,echo=FALSE}
 #tidy data
-data14_tidy<-data14[c(-536),]
+data14_tidy<-data14[c(-536),]  # remove NA should use: data14_tidy <- data14 %>% select(country_of_origin != NA)
 ```
 
 In this step, we used box plots to explore the relationship between aroma grade, flavor grade, acidity grade and quality class of coffee beans separately.
