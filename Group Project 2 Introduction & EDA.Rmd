@@ -77,8 +77,8 @@ top_5<-coffee_origin%>%
   top_n(5)
 
 #build bar plots 
-ggplot(top_5,aes(x=country_of_origin,y=counts,sort(y),fill='lightblue'))+
-  geom_bar(stat='identity')+
+ggplot(top_5,aes(x=reorder(country_of_origin, -counts), y=counts))+
+  geom_bar(stat='identity', fill = "steelblue)+
   theme(legend.position = "none")+
   geom_text(aes(label=counts,vjust=-0.5))+
   ylim(0,230)
