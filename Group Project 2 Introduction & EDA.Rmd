@@ -45,11 +45,10 @@ In order to understand the data, we take a summary of our data set first.
 ```{r Summary statistics,echo=FALSE, message=FALSE, out.width = '70%',paged.print=TRUE}
 #select useful summary statistics of data set
 summary.stat<-skim_without_charts(data14)%>%
-  as.data.frame()%>%
   select(,-c(5:12,16:18))
-summary.stat[is.na(summary.stat)]<-'-'
 
 #convert into table
+options(knitr.kable.NA = '-')
 summary.stat%>%
   transmute(type=skim_type,variable=skim_variable,n_missing=n_missing,complete_rate=complete_rate,mean=numeric.mean,sd=numeric.sd,min=numeric.p0,max=numeric.p100)%>%
 kable(caption = '\\label{tab:Summary statistics} Summary statistics of the original data set.',
