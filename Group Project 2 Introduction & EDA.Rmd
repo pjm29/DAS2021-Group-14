@@ -21,9 +21,11 @@ library(kableExtra)
 library(gridExtra)
 library(moderndive)
 library(skimr)
+library(sjPlot)
 library(GGally)
 library(knitr)
 library(janitor)
+library(jtools)
 ```
 # Introduction {#sec:intro}
 
@@ -34,6 +36,7 @@ We used R to handle this data set and renamed it as *'data14.csv'*. Since the te
 data14<-read.csv('dataset14.csv')
 data14$Qualityclass<-factor(data14$Qualityclass,label = c(1,0))
 data14$harvested<-as.character(data14$harvested)
+data14$Qualityclass<-factor(data14$Qualityclass,label=c(1,0))  
 glimpse(data14)
 ```
 
@@ -82,6 +85,8 @@ ggplot(top_5,aes(x=country_of_origin,y=counts,sort(y),fill='lightblue'))+
   geom_text(aes(label=counts,vjust=-0.5))+
   ylim(0,230)
   
+#tidy data
+data14_tidy<-data14[c(-536,-176),]  # remove NA should use: data14_tidy <- data14 %>% select(country_of_origin != NA)
 ```
 
 Next, we used box plots to explore the relationship between aroma grade, flavor grade, acidity grade and quality class of coffee beans separately.
@@ -118,7 +123,6 @@ transmute(Qualityclass=c('Good','Poor'), n=n ) %>%
 kable(caption = '\\label{tab:category_two_defects} Summary statistics on the number of category 2 type defects by quality class.',
 booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
-
 ```
 
 For the purpose of observing whether the harvested year of coffee beans is related to the coffee quality class, a bar plot is made to show the change of the proportion of each quality class during the period from 2010 to 2018. Because the amount of missing data in this column is relatively small, we ignored the missing values and analyzed the data roughly.
@@ -147,7 +151,11 @@ corr <- data14_tidy %>%
   na.omit()
 ggpairs(corr)
 ```
+<<<<<<< HEAD
 Then, the constant replacement method will be considered. Due to coffee beans from each country should have similar growing environment and geographical conditions, we choose to use average by each country to deal with missing data of altitude from different area.
+=======
+Then, considering coffee beans from each country should have similar growing environment and geographical conditions, we choose to use average by each country to deal with missing data of altitude from different area.
+>>>>>>> 86aca7bddf7a67bd49d80cf1de8975df74281d81
 ```{r deal with missing values,echo=FALSE, warning=FALSE}
 #the number of NA,mean and median 'altitude_mean_meters' term group by countries
 summary_country_altitude<-data14%>%
@@ -170,7 +178,7 @@ for (i in 1:length(countries)){
 }
 
 ```
-After the process of filling the missing data, a box plot is built for visualizing the effect of altitude on coffee qualify class. Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualify class tend to be slightly higher than that in poor qualify class in general. 
+After the process of filling the missing data, a box plot is built for visualizing the effect of altitude on coffee qualify class. 
 ```{r altitude ,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:box2} Altitude by coffee qualify class", fig.pos = 'H', warning=FALSE, message=FALSE}
 #for clear visualization, removing 11 points which altitude >6000 in the plot
 #nrow(data14_tidy[data14_tidy$altitude_mean_meters>6000,])
@@ -179,4 +187,44 @@ ggplot(data14_tidy[data14_tidy$altitude_mean_meters<=6000,],aes(x=Qualityclass,y
   labs(x='Quality class',y='Altitude')+
   theme(legend.position = "none")
 ```
+Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualify class tend to be slightly higher than that in poor qualify class in general. In addition, the mean altitude of the cultivation of good coffee beans is more concentrated than the distribution of poor qualited coffee beans. Therefore, it can be inferred that the average altitude [Good mean] is more suitable for high-quality output of coffee beans. Manufacturers can choose planting locations to improve the quality of coffee beans.
+
+
+# Formal Data Analysis {#sec:FDA}
+
+Since we have a binary response variable $Y_i$ we will apply a binary generalised linear model and we will  consider the logit link. From our Exploratory Data Analysis we expect Flavor, Aroma and Acidity tobe good predictors of Qualityclass.
+
+We then fit the following model, with Qualityclass = Poor as our baseline category.
+
+$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}$$
+
+
+```{r score_model, echo = FALSE, eval = TRUE}
+model_scores <- glm(Qualityclass ~ flavor + aroma + acidity,data = data14_tidy,family = binomial(link = "logit"))
+summary(model_scores)
+```
+Here we see that the coefficients for flavor, aroma and acidity are all negative, this suggests that an increase in any of these variables results in a decreased chance of being classified as Poor coffee. flavor is suggested to have the greatest impact on decreased chance.
+
+
+We then provide Wald intervals for more inference on the significance of our log(odds).
+```{r wald, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:box} The Wald Confidence Intervals for our log(odds) in Model 1",fig.pos='H'}
+confint.default(model_scores) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable()
+```
+
+Here, none of the Wald intervals contain 0 and we conclude that the log(odds) in our model are significant.
+
+
+
+```{r odds_plot}
+# plot of odds ratios
+plot_model(model_scores, show.values = TRUE, 
+title = "", show.p = TRUE)
+```
+
+
+
+The above figure shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for flavor, aroma and acidity their odds of being classified as poor decrease (by factors close to 0).
+
+
 
