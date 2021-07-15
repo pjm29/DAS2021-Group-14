@@ -21,9 +21,11 @@ library(kableExtra)
 library(gridExtra)
 library(moderndive)
 library(skimr)
+library(sjPlot)
 library(GGally)
 library(knitr)
 library(janitor)
+library(jtools)
 ```
 
 # Introduction {#sec:intro}
@@ -53,7 +55,7 @@ After removing the missing value in column 'country_of_origin', we stored it as 
 in R. It still contains 1133 rows and 8 columns and will be used for analyzing in the following part of this report.
 ```{r tidy data,echo=FALSE}
 #tidy data
-data14_tidy<-data14[c(-536),]  # remove NA should use: data14_tidy <- data14 %>% select(country_of_origin != NA)
+data14_tidy<-data14[c(-536,-176),]  # remove NA should use: data14_tidy <- data14 %>% select(country_of_origin != NA)
 ```
 
 In this step, we used box plots to explore the relationship between aroma grade, flavor grade, acidity grade and quality class of coffee beans separately.
@@ -143,4 +145,44 @@ ggplot(data14_tidy[data14_tidy$altitude_mean_meters<=6000,],aes(x=Qualityclass,y
   labs(x='Quality class',y='Altitude')
 ```
 Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualify class tend to be slightly higher than that in poor qualify class in general. In addition, the mean altitude of the cultivation of good coffee beans is more concentrated than the distribution of poor qualited coffee beans. Therefore, it can be inferred that the average altitude [Good mean] is more suitable for high-quality output of coffee beans. Manufacturers can choose planting locations to improve the quality of coffee beans.
+
+
+# Formal Data Analysis {#sec:FDA}
+
+Since we have a binary response variable $Y_i$ we will apply a binary generalised linear model and we will  consider the logit link. From our Exploratory Data Analysis we expect Flavor, Aroma and Acidity tobe good predictors of Qualityclass.
+
+We then fit the following model, with Qualityclass = Poor as our baseline category.
+
+$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}$$
+
+
+```{r score_model, echo = FALSE, eval = TRUE}
+model_scores <- glm(Qualityclass ~ flavor + aroma + acidity,data = data14_tidy,family = binomial(link = "logit"))
+summary(model_scores)
+```
+Here we see that the coefficients for flavor, aroma and acidity are all negative, this suggests that an increase in any of these variables results in a decreased chance of being classified as Poor coffee. flavor is suggested to have the greatest impact on decreased chance.
+
+
+We then provide Wald intervals for more inference on the significance of our log(odds).
+```{r wald, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:box} The Wald Confidence Intervals for our log(odds) in Model 1",fig.pos='H'}
+confint.default(model_scores) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable()
+```
+
+Here, none of the Wald intervals contain 0 and we conclude that the log(odds) in our model are significant.
+
+
+
+```{r odds_plot}
+# plot of odds ratios
+plot_model(model_scores, show.values = TRUE, 
+title = "", show.p = TRUE)
+```
+
+
+
+The above figure shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for flavor, aroma and acidity their odds of being classified as poor decrease (by factors close to 0).
+
+
+
 
