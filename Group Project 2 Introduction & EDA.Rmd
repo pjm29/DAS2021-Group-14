@@ -129,7 +129,7 @@ data14.year<-data14_tidy %>%
   select(harvested,Qualityclass) %>%
   na.omit()
 
-data14.year %>% 
+percentage <- data14.year %>% 
   tabyl(harvested,Qualityclass) %>% 
   adorn_percentages() %>% 
   adorn_pct_formatting() %>% 
