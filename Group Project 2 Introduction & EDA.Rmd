@@ -125,16 +125,17 @@ kable_styling(font_size = 10, latex_options = "hold_position")
 
 For the purpose of observing whether the harvested year of coffee beans is related to the coffee quality class, a bar plot is made to show the change of the proportion of each quality class during the period from 2010 to 2018. Because the amount of missing data in this column is relatively small, we ignored the missing values and analyzed the data roughly.
 ```{r harvested year,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:barplot} The proportion of each quality class in every harvested year", fig.pos = 'H'}
-data14.year<-data14_tidy%>%
-  select(harvested,Qualityclass)
+data14.year<-data14_tidy %>%
+  select(harvested,Qualityclass) %>%
+  na.omit()
 
-percentage<-na.omit(data14.year)%>% 
+data14.year %>% 
   tabyl(harvested,Qualityclass) %>% 
   adorn_percentages() %>% 
   adorn_pct_formatting() %>% 
   adorn_ns()
 
-ggplot(na.omit(data14.year), aes(x= harvested,  y = ..prop.., group=Qualityclass, fill=Qualityclass)) + 
+ggplot(data14.year, aes(x= harvested,  y = ..prop.., group=Qualityclass, fill=Qualityclass)) + 
     geom_bar(position="dodge", stat="count") +
     labs(y = "Proportion")
 ```
