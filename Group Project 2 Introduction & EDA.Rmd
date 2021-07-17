@@ -92,16 +92,19 @@ Next, we used box plots to explore the relationship between aroma grade, flavor 
 p1<-ggplot(data14_tidy,aes(x=Qualityclass,y=aroma,fill=Qualityclass))+
   geom_boxplot()+
   labs(x='Qualityclass',y='Aroma grade')+
+  scale_x_discrete(labels=c('Good','Poor'))+
   theme(legend.position = "none")
 
 p2<-ggplot(data14_tidy,aes(x=Qualityclass,y=flavor,fill=Qualityclass))+
   geom_boxplot()+
   labs(x='Qualityclass',y='Flavor grade')+
+  scale_x_discrete(labels=c('Good','Poor'))+
   theme(legend.position = "none")
 
 p3<-ggplot(data14_tidy,aes(x=Qualityclass,y=acidity,fill=Qualityclass))+
   geom_boxplot()+
   labs(x='Qualityclass',y='Acidity grade')+
+  scale_x_discrete(labels=c('Good','Poor'))+
   theme(legend.position = "none")
 
 grid.arrange(p1,p2,p3,ncol=3)
@@ -129,15 +132,8 @@ data14.year<-data14_tidy %>%
   select(harvested,Qualityclass) %>%
   na.omit()
 
-percentage <- data14.year %>% 
-  tabyl(harvested,Qualityclass) %>% 
-  adorn_percentages() %>% 
-  adorn_pct_formatting() %>% 
-  adorn_ns()
-
-ggplot(data14.year, aes(x= harvested,  y = ..prop.., group=Qualityclass, fill=Qualityclass)) + 
-    geom_bar(position="dodge", stat="count") +
-    labs(y = "Proportion")
+plot_xtab(data14.year$Qualityclass,data14.year$harvested,show.values=FALSE,show.total=FALSE,
+          axis.labels = c('Good','Poor'),legend.title = 'harvested year')
 ```
 As shown in the Figure \ref{fig:barplot},there are both fluctuation in the proportion of two quality classes during this period. However, we can not find out the regular trends of the two proportions over time from the figure. For this reason, we could infer that harvested year have a little effect on the coffee quality.
 
@@ -184,6 +180,7 @@ After the process of filling the missing data, a box plot is built for visualizi
 ggplot(data14_tidy[data14_tidy$altitude_mean_meters<=6000,],aes(x=Qualityclass,y=altitude_mean_meters,fill=Qualityclass))+
   geom_boxplot()+
   labs(x='Quality class',y='Altitude')+
+  scale_x_discrete(labels=c('Good','Poor'))+
   theme(legend.position = "none")
 ```
 Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualify class tend to be slightly higher than that in poor qualify class in general. In addition, the mean altitude of the cultivation of good coffee beans is more concentrated than the distribution of poor qualited coffee beans. Therefore, it can be inferred that the average altitude [Good mean] is more suitable for high-quality output of coffee beans. Manufacturers can choose planting locations to improve the quality of coffee beans.
