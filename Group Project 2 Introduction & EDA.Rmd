@@ -53,7 +53,7 @@ summary.stat%>%
   transmute(type=skim_type,variable=skim_variable,n_missing=n_missing,complete_rate=complete_rate,mean=numeric.mean,sd=numeric.sd,min=numeric.p0,max=numeric.p100)%>%
 kable(caption = '\\label{tab:Summary statistics} Summary statistics of the original data set.',
 booktabs = TRUE, align = "c",digit=2) %>%
-kable_styling(font_size = 10, latex_options = "hold_position")
+kable_styling(font_size = 10, latex_options = "HOLD_position")
 ```
 From the information above, we can find that there are some missing values scatter in three columns(1 in column 'country_of_origin', 199 in column 'altitude_mean_meters' and 59 in column 'harvested'). Specifically, the 1 missing value in column 'country_of_origin', which altitude and harvested year are also unknown. There is no enough evidence to determine its origin country. And the missing data is a small amount, so we could remove this row for retaining the data integrity. In addition, the number of missing values in other two columns are relatively large, they will be handled in the next steps.Meanwhile, no abnormal values have been found yet. 
 
