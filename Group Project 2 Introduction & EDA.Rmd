@@ -66,7 +66,7 @@ data14_tidy <-data14 %>%
   
 ```
 
-Initially, we had a look at top 5 countries in the number of good quality batches. It shows that the coffee beans origin from Mexico, Colombia and Guatemala have the higher proportion of good quality in general. The number of batches in good quality are 192, 155, and 150 in these three countries respectively.
+Initially, We discuss the geographical distribution of coffee beans of different qualities. We had a look at top 5 countries in the number of good quality batches. 
 ```{r top5 countries, echo=FALSE, warning=FALSE, out.width = "70%", fig.align = "center", fig.cap = "\\label{fig:bar} Top 5 countries in the number of batches in good quality.", fig.pos = 'H'}
 #count the number of batches in good quality by country
 coffee_origin<- data14_tidy %>%
@@ -86,7 +86,7 @@ ggplot(top_5,aes(x=reorder(country_of_origin, -counts), y=counts))+
 #tidy data
 data14_tidy<-data14[c(-536,-176),]  # remove NA should use: data14_tidy <- data14 %>% select(country_of_origin != NA)
 ```
-
+It shows that the coffee beans origin from Mexico, Colombia and Guatemala have the higher proportion of good quality in general. The number of batches in good quality are 192, 155, and 150 in these three countries respectively.
 Next, we used box plots to explore the relationship between aroma grade, flavor grade, acidity grade and quality class of coffee beans separately.
 ```{r aroma;flavor;acidity,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:box} The relationship between aroma,flavor,acidity and quality class", fig.pos = 'H'}
 p1<-ggplot(data14_tidy,aes(x=Qualityclass,y=aroma,fill=Qualityclass))+
