@@ -146,11 +146,8 @@ corr <- data14_tidy %>%
   na.omit()
 ggpairs(corr)
 ```
-<<<<<<< HEAD
+
 Then, the constant replacement method will be considered. Due to coffee beans from each country should have similar growing environment and geographical conditions, we choose to use average by each country to deal with missing data of altitude from different area.
-=======
-Then, considering coffee beans from each country should have similar growing environment and geographical conditions, we choose to use average by each country to deal with missing data of altitude from different area.
->>>>>>> 86aca7bddf7a67bd49d80cf1de8975df74281d81
 ```{r deal with missing values,echo=FALSE, warning=FALSE}
 #the number of NA,mean and median 'altitude_mean_meters' term group by countries
 summary_country_altitude<-data14%>%
@@ -221,6 +218,7 @@ title = "", show.p = TRUE)
 
 
 The above figure shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for flavor, aroma and acidity their odds of being classified as poor decrease (by factors close to 0).
+
 
 
 
