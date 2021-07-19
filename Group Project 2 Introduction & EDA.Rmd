@@ -37,7 +37,7 @@ We used R to handle this data set and renamed it as *'data14.csv'*. Since the te
 ```{r glimpse,echo=FALSE, warning=FALSE}
 data14<-read.csv('dataset14.csv')
 data14$Qualityclass<-factor(data14$Qualityclass,label = c(1,0))
-data14$harvested<-as.character(data14$harvested)
+data14$harvested<-as.factor(data14$harvested)
 glimpse(data14)
 ```
 
@@ -187,37 +187,55 @@ Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualif
 
 # Formal Data Analysis {#sec:FDA}
 
-Since we have a binary response variable $Y_i$ we will apply a binary generalised linear model and we will  consider the logit link. From our Exploratory Data Analysis we expect Flavor, Aroma and Acidity tobe good predictors of Qualityclass.
+Since we have a binary response variable $Y_i$ we will apply a binary Generalised Linear Model and we will  consider the logit link. From our Exploratory Data Analysis we expect Flavor, Aroma and Acidity to be good predictors of Qualityclass. We also have seen that Altitude and Category Two Defects may have some effect, so they are also included.
 
 We then fit the following model, with Qualityclass = Poor as our baseline category.
+
+$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}+ \beta_4 \cdot \textrm{category two defects} +  \beta_5 \cdot \textrm{altitude}$$
+
+
+```{r full_model, echo = FALSE, eval = TRUE}
+model_full <- glm(Qualityclass ~ flavor + aroma + acidity + category_two_defects + altitude_mean_meters  ,data = data14_tidy,family = binomial(link = "logit"))
+
+summary(model_full)
+```
+Here we see that the coefficients for flavor, aroma and acidity are all negative, this suggests that an increase in any of these variables results in a decreased chance of being classified as Poor coffee. flavor is suggested to have the greatest impact on decreased chance. Their p-values also suggest significance. Variables category_two_defects and altitude_mean_meters have very small effects and their p-values suggest they are not significant.
+
+
+We then provide Wald intervals for more inference on the significance of our log(odds).
+```{r wald, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:CI} The Wald Confidence Intervals for our log(odds) in Model 1"}
+confint.default(model_full) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable()
+```
+
+The Wald Intervals for our first 3 variables do not contain 0 so we will keep them in the model. Intervals for the variables category_two_defects and altitude_mean_meters both contain 0, furthering the idea that they are not significant terms. 
+
+We drop them from the model and fit,
 
 $$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}$$
 
 
 ```{r score_model, echo = FALSE, eval = TRUE}
-model_scores <- glm(Qualityclass ~ flavor + aroma + acidity,data = data14_tidy,family = binomial(link = "logit"))
+model_scores <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "logit"))
+
+
 summary(model_scores)
 ```
-Here we see that the coefficients for flavor, aroma and acidity are all negative, this suggests that an increase in any of these variables results in a decreased chance of being classified as Poor coffee. flavor is suggested to have the greatest impact on decreased chance.
 
+With confidence intervals of
 
-We then provide Wald intervals for more inference on the significance of our log(odds).
-```{r wald, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:box} The Wald Confidence Intervals for our log(odds) in Model 1",fig.pos='H'}
+```{r wald2, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:CI} The Wald Confidence Intervals for our log(odds) in Model 1"}
 confint.default(model_scores) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
   kable()
 ```
 
-Here, none of the Wald intervals contain 0 and we conclude that the log(odds) in our model are significant.
+And Odds Ratios of
 
-
-
-```{r odds_plot}
+```{r odds_plot2,fig.cap = "\\label{fig:OR} Odds Ratios"}
 # plot of odds ratios
 plot_model(model_scores, show.values = TRUE, 
 title = "", show.p = TRUE)
 ```
-
-
 
 The above figure shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for flavor, aroma and acidity their odds of being classified as poor decrease (by factors close to 0).
 
@@ -239,5 +257,7 @@ h3<-ggplot(data14_tidy,aes(x=acidity,fill='steelblue'))+
 
 ```
 
+
+# Conclusion {#sec:Conc}
 
 
