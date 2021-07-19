@@ -59,7 +59,7 @@ kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 From the information above, we can find that there are some missing values scatter in three columns(1 in column 'country_of_origin', 199 in column 'altitude_mean_meters' and 59 in column 'harvested'). Specifically, the 1 missing value in column 'country_of_origin', which altitude and harvested year are also unknown. There is no enough evidence to determine its origin country. And the missing data is a small amount, so we could remove this row for retaining the data integrity. In addition, the number of missing values in other two columns are relatively large, they will be handled in the next steps. Meanwhile, there are no abnormal values. However, the minimums of aroma grade, flavor grade and acidity grade are all zeros. Although zero is not out of the given range in these columns, these outliers will affect our analysis results and these zeros come from the same batch, so we choose to drop this row of data.
 
-After removing the missing value in column 'country_of_origin', we stored it as *'data14_tidy.csv'*
+After removing the missing value in column 'country_of_origin' and an outlier, we stored it as *'data14_tidy.csv'*
 in R. It still contains 1132 rows and 8 columns and will be used for analyzing in the following part of this report.
 ```{r tidy data,echo=FALSE}
 #tidy data:remove NA in country_of_origin
@@ -83,10 +83,9 @@ ggplot(top_5,aes(x=reorder(country_of_origin, -counts), y=counts))+
   geom_bar(stat='identity', fill = 'steelblue')+
   theme(legend.position = "none")+
   geom_text(aes(label=counts,vjust=-0.5))+
+  labs(x='Country',y='Count')+
   ylim(0,230)
   
-#tidy data
-data14_tidy<-data14[c(-536,-176),]  # remove NA should use: data14_tidy <- data14 %>% select(country_of_origin != NA)
 ```
 
 Next, we used box plots to explore the relationship between aroma grade, flavor grade, acidity grade and quality class of coffee beans separately.
@@ -137,7 +136,7 @@ data14.year<-data14_tidy %>%
 plot_xtab(data14.year$Qualityclass,data14.year$harvested,show.values=FALSE,show.total=FALSE,
           axis.labels = c('Good','Poor'),legend.title = 'harvested year')
 ```
-As shown in the Figure \ref{fig:barplot},there are both fluctuation in the proportion of two quality classes during this period. However, we can not find out the regular trends of the two proportions over time from the figure. For this reason, we could infer that harvested year have a little effect on the coffee quality.
+As shown in the Figure \ref{fig:barplot}, there are both fluctuation in the proportion of two quality classes during this period. However, we can not find out the regular trends of the two proportions over time from the figure. Noticing the shapes of bar in the figure, it is obvious that the proportions of good quality coffee beans are much higher in 2010, 2011 and 2018 and that in the rest of years are relatively balanced. We speculated that this may be due to the 59 missing values. For this reason, we could infer that harvested year have a little effect on the coffee quality.
 
 Before explore the relationship between the mean altitude of the growers farm and the coffee quality, we need to work with the large amount of missing values in altitude. There are several ways to fill the missing data. The most common two methods are constant replacement and regression interpolation.
 
@@ -221,7 +220,7 @@ title = "", show.p = TRUE)
 
 The above figure shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for flavor, aroma and acidity their odds of being classified as poor decrease (by factors close to 0).
 
-```{r histgram,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:hist} The histgrams for aroma,flavor and acidity grades", fig.pos = 'H'}
+```{r histogram,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:hist} The histgrams for aroma, flavor and acidity grades", fig.pos = 'H'}
 h1<-ggplot(data14_tidy,aes(x=aroma,fill='steelblue'))+
   geom_histogram(breaks=seq(5,9,0.2))+
   labs(x='Aroma grade')+
