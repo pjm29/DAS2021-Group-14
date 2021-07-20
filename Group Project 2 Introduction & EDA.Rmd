@@ -1,6 +1,6 @@
 ---
 title: "Group project 2 -- Introduction & EDA"
-author: "wifan"
+author: "wifan & pearse"
 date: "2021/7/12"
 output:
   pdf_document: default
@@ -203,9 +203,11 @@ Here we see that the coefficients for flavor, aroma and acidity are all negative
 
 
 We then provide Wald intervals for more inference on the significance of our log(odds).
-```{r wald, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:CI} The Wald Confidence Intervals for our log(odds) in Model 1"}
+```{r wald, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:CI} The Wald Confidence Intervals for our log(odds) in our Full Model"}
 confint.default(model_full) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
-  kable()
+    kable(caption = '\\label{tab:wald} Wald Confidence Intervals for log odds in our Full Model',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 
 The Wald Intervals for our first 3 variables do not contain 0 so we will keep them in the model. Intervals for the variables category_two_defects and altitude_mean_meters both contain 0, furthering the idea that they are not significant terms. 
@@ -215,29 +217,109 @@ We drop them from the model and fit,
 $$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}$$
 
 
-```{r score_model, echo = FALSE, eval = TRUE}
-model_scores <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "logit"))
+```{r model_1, echo = FALSE, eval = TRUE}
+model_1 <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "logit"))
 
 
-summary(model_scores)
+summary(model_1)
 ```
 
 With confidence intervals of
 
-```{r wald2, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:CI} The Wald Confidence Intervals for our log(odds) in Model 1"}
-confint.default(model_scores) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
-  kable()
+```{r wald2, echo = FALSE, eval = TRUE,fig.align = "center"}
+confint.default(model_1) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+    kable(caption = '\\label{tab:wald1} Wald Confidence Intervals for log odds in Model 1',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 
-And Odds Ratios of
+We see that flavor, aroma and acidity are still all significant and have similar coefficients. Our deviance however is quite high.
 
-```{r odds_plot2,fig.cap = "\\label{fig:OR} Odds Ratios"}
+To explore other options we then fit a model with an interaction between flavor and aroma, since this makes intuitive sense.
+
+$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity} +\beta_4 \cdot \textrm{(flavor*aroma)} $$
+```{r score_model_int, echo = FALSE, eval = TRUE}
+model_2_int <- glm(Qualityclass ~ flavor + aroma + acidity + flavor*aroma ,data = data14_tidy,family = binomial(link = "logit"))
+summary(model_2_int)
+```
+
+```{r wald_int, echo = FALSE, eval = TRUE}
+confint.default(model_2_int) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable(caption = '\\label{tab:wald3} Wald Confidence Intervals for log odds in Model 2',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+```
+
+ADD INTERPRETATION HERE 
+
+
+Figure \ref{fig:hist} suggests that flavor, aroma and acidity follow an approximately normal distribution, so we will fit a model with the probit link function. 
+
+```{r model_3_probit, echo = FALSE, eval = TRUE}
+model_3_probit <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "probit"))
+summary(model_3_probit)
+```
+
+```{r wald_prob, echo = FALSE, eval = TRUE}
+confint.default(model_3_probit) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable(caption = '\\label{tab:wald4} Wald Confidence Intervals for log odds in Model 3',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+```
+
+All terms are significant as in the other models, however both AIC and Deviance are higher than in the others. We follow this with the cloglog model
+
+```{r model_4_cloglog, echo = FALSE, eval = TRUE}
+model_4_cloglog <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "cloglog"))
+summary(model_4_cloglog)
+```
+
+```{r wald_clog, echo = FALSE, eval = TRUE}
+confint.default(model_4_cloglog) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable(caption = '\\label{tab:wald5} Wald Confidence Intervals for log odds in Model 4',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+```
+
+Here again we find all terms significant and a low AIC and Deviance relative to the other models.
+
+
+
+
+We compare the 4 significant models fitted.
+
+
+```{r model_selection,echo=FALSE, eval = TRUE}
+model.comp.scores <- glance(model_1)
+model.comp.int <- glance(model_2_int)
+model.comp.probit <- glance(model_3_probit)
+model.comp.cloglog <- glance(model_4_cloglog)
+Models <- c("Model 1","Model 2 (Interaction)","Model 3 (Probit)", "Model 4 (cloglog)")
+bind_rows(model.comp.scores, model.comp.int,
+          model.comp.probit,model.comp.cloglog,.id="Model") %>%
+  select(Model,deviance,AIC,BIC) %>%
+  mutate(Model=Models) %>%
+  kable(
+    digits = 2,
+    caption = "\\label{tab:model_comp} Comparison of models by Deviance, AIC and BIC") %>%
+  kable_styling(font_size = 10, latex_options = "hold_position")
+
+```
+Table \ref{tab:model_comp} provides us with model diagnostics for the 4 models fitted. We see that the Model 4 has the lowest AIC and Deviance and that Model 3 has the highest Deviance and AIC. Since we are modeling a binary response Deviance is not a useful measure for goodness of fit. 
+
+We decide on Model 1 even though it has the 3rd highest AIC, since it is the simplest and has the most interpretable link function.
+
+Looking at the odds ratios of Model 1 we see
+
+
+```{r odds_plot2,echo = FALSE, fig.cap = "\\label{fig:OR} Odds Ratios for Model 1",fig.pos = 'H',out.width = '100%'}
 # plot of odds ratios
-plot_model(model_scores, show.values = TRUE, 
+plot_model(model_1, show.values = TRUE, 
 title = "", show.p = TRUE)
 ```
 
-The above figure shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for flavor, aroma and acidity their odds of being classified as poor decrease (by factors close to 0).
+Figure \ref{fig:odds_plot2} shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for flavor, aroma and acidity their odds of being classified as poor decrease (by factors close to 0).
+
 
 ```{r histgram,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:hist} The histgrams for aroma,flavor and acidity grades", fig.pos = 'H'}
 h1<-ggplot(data14_tidy,aes(x=aroma,fill='steelblue'))+
@@ -259,5 +341,9 @@ h3<-ggplot(data14_tidy,aes(x=acidity,fill='steelblue'))+
 
 
 # Conclusion {#sec:Conc}
+
+In conclusion we have found that increasing Flavor, Aroma and Acidity in coffee beans significantly reduces the chances of being classified as Poor Quality. 
+
+In further analysis we could account for the effects of the country the beans were from as well as the year it was harvested. We could also try to predict and classify future unseen coffee beans.
 
 
