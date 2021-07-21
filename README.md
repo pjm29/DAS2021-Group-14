@@ -4,7 +4,7 @@ Group project 2 for group 14
 # Data
 This file contains two documents of our data set
 dataset14.csv: our original data set (1134 rows; 8 columns)
-daat14_tidy: 'dataset14.csv' after cleaning (1133 rows; 8 columns)
+daat14_tidy: 'dataset14.csv' after cleaning (1132 rows; 8 columns)
 
 # Source
 Coffee Quality Database(CQD)
