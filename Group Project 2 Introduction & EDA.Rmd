@@ -141,7 +141,7 @@ As shown in the Figure \ref{fig:barplot},there are both fluctuation in the propo
 
 Before explore the relationship between the mean altitude of the growers farm and the coffee quality, we need to work with the large amount of missing values in altitude. There are several ways to fill the missing data. The most common two methods are constant replacement and regression interpolation.
 
-First, we checked the correlation between altitude and previous four explanatory variables in figure \ref{fig:corr}. Unfortunately, the correlation coefficients between altitude and other variables are -0.012, -0.01,0.03 and -0.05 respectively, which are very weak relationship, so we will not take regression method into account.
+First, we checked the correlation between altitude and previous four explanatory variables in figure \ref{fig:corr}. The correlation coefficients between altitude and other variables are -0.012, -0.01,0.03 and -0.05 respectively, which are very weak relationship, so we will not take regression method into account.
 ```{r check correlation ,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:corr} Potential factors for altitude", fig.pos = 'H', warning=FALSE, message=FALSE}
 corr <- data14_tidy %>%
   select(2:6)%>%
@@ -187,7 +187,9 @@ Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualif
 
 # Formal Data Analysis {#sec:FDA}
 
-Since we have a binary response variable $Y_i$ we will apply a binary Generalised Linear Model and we will  consider the logit link. From our Exploratory Data Analysis we expect Flavor, Aroma and Acidity to be good predictors of Qualityclass. We also have seen that Altitude and Category Two Defects may have some effect, so they are also included.
+We will apply a Binomial Generalised Linear Model and we will initially consider the logit link. We assume this model since we have a binary response variable $Y_i$ and we have independent obvservations. There is some evidence of collinearity which we will ignore for now.
+
+From our Exploratory Data Analysis we expect Flavor, Aroma and Acidity to be good predictors of Qualityclass. We also have seen that Altitude and Category Two Defects may have some effect, so they are also included. 
 
 We then fit the following model, with Qualityclass = Poor as our baseline category.
 
@@ -210,9 +212,9 @@ booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 
-The Wald Intervals for our first 3 variables do not contain 0 so we will keep them in the model. Intervals for the variables category_two_defects and altitude_mean_meters both contain 0, furthering the idea that they are not significant terms. 
+The Wald Intervals for our first 3 variables do not contain 0 so we will keep them in the model. Intervals for the variables category_two_defects and altitude_mean_meters both contain 0, further evidence that they are not significant terms. 
 
-We drop them from the model and fit,
+We drop them from the model and fit the following model,
 
 $$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}$$
 
@@ -250,7 +252,7 @@ booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 
-ADD INTERPRETATION HERE 
+Here all terms are significant, fitting the interaction has increased the negative effect of being classified as Poor for Flavor and Aroma. Whilst the interaction itself has a positive effect on the chances of being classified as poor. The AIC is lower than that of Model 1 however we are wary of overfitting with the interaction term.
 
 
 Figure \ref{fig:hist} suggests that flavor, aroma and acidity follow an approximately normal distribution, so we will fit a model with the probit link function. 
@@ -267,7 +269,7 @@ booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 
-All terms are significant as in the other models, however both AIC and Deviance are higher than in the others. We follow this with the cloglog model
+All terms are significant as in the other models, however both AIC and Deviance are higher than in the others. We follow this with the cloglog model.
 
 ```{r model_4_cloglog, echo = FALSE, eval = TRUE}
 model_4_cloglog <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "cloglog"))
@@ -342,8 +344,8 @@ h3<-ggplot(data14_tidy,aes(x=acidity,fill='steelblue'))+
 
 # Conclusion {#sec:Conc}
 
-In conclusion we have found that increasing Flavor, Aroma and Acidity in coffee beans significantly reduces the chances of being classified as Poor Quality. 
+In conclusion we have found that increasing Flavor, Aroma and Acidity in coffee beans significantly reduces the chances of being classified as Poor Quality. Whilst Altitude and Number of Category 2 Defects have no significant effect
 
-In further analysis we could account for the effects of the country the beans were from as well as the year it was harvested. We could also try to predict and classify future unseen coffee beans.
+In further analysis we could account for the effects of the country the beans were from as well as the year it was harvested with spatio-temporal methods. We could explore the collinearity further as well as try to predict and classify future unseen coffee beans.
 
 
