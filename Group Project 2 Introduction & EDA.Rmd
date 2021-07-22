@@ -68,25 +68,26 @@ data14_tidy <-data14 %>%
   filter(aroma!=0)
 ```
 
-Initially, we had a look at top 5 countries in the number of good quality batches. It shows that the coffee beans origin from Mexico, Colombia and Guatemala have the higher proportion of good quality in general. The number of batches in good quality are 192, 155, and 150 in these three countries respectively.
-```{r top5 countries, echo=FALSE, warning=FALSE, out.width = "70%", fig.align = "center", fig.cap = "\\label{fig:bar} Top 5 countries in the number of batches in good quality.", fig.pos = 'H'}
-#count the number of batches in good quality by country
-coffee_origin<- data14_tidy %>%
-  select("country_of_origin", "Qualityclass")%>%
-  group_by(country_of_origin)%>%
-  summarise(counts = n())
-top_5<-coffee_origin%>%
-  top_n(5)
+Initially, we would like to explore the relationship between countries and quality class of coffee beans. Because the categories of origin country are too large and detailed, a column named *'continent'* was added to the tidy data with the goal of facilitating analysis(the source of the continent data has been represented on our github repository). Ignoring the good quality rate of the coffee beans is 100% as there is just one batch of coffee beans comes from Oceania. Figure \ref{fig:barplot1} shows that the coffee beans origin from Africa have the highest proportion of good quality in this sample(nearly 70%). Coffee beans from America and Asia are of similar quality.
+```{r continents, echo=FALSE, warning=FALSE, out.width = "70%", fig.align = "center", fig.cap = "\\label{fig:barplot1} The proportion of each quality class in every continents.", fig.pos = 'H'}
+#select country and its continent; merge continents data set with the data14_tidy
+continent<-read.csv('https://raw.githubusercontent.com/pjm29/DAS2021-Group-14/main/data/continents.csv',header=T)
+continents<-continent%>%
+  select(c(1,6))
+colnames(continents)<-c('country_of_origin','continent')
+data14_tidy<-left_join(data14_tidy,continents,by='country_of_origin')
+data14_tidy[data14_tidy$country_of_origin=='United States (Hawaii)',]$continent<-'Americas'
+data14_tidy[data14_tidy$country_of_origin=='United States (Puerto Rico)',]$continent<-'Americas'
+data14_tidy[data14_tidy$country_of_origin=='Tanzania, United Republic Of',]$continent<-'Africa'
+data14_tidy[data14_tidy$country_of_origin=='Cote d?Ivoire',]$continent<-'Africa'
+data14_tidy$continent<-factor(data14_tidy$continent)
 
-#build bar plots 
-ggplot(top_5,aes(x=reorder(country_of_origin, -counts), y=counts))+
-  geom_bar(stat='identity', fill = 'steelblue')+
-  theme(legend.position = "none")+
-  geom_text(aes(label=counts,vjust=-0.5))+
-  ylim(0,230)
-  
-#tidy data
-data14_tidy<-data14[c(-536,-176),]  # remove NA should use: data14_tidy <- data14 %>% select(country_of_origin != NA)
+#draw barplots by continents and quality class
+data14.continent<-data14_tidy %>%
+  select(continent,Qualityclass)
+
+plot_xtab(data14.continent$Qualityclass,data14.continent$continent,show.values=FALSE,show.total=FALSE,axis.labels = c('Good','Poor'))
+
 ```
 
 Next, we used box plots to explore the relationship between aroma grade, flavor grade, acidity grade and quality class of coffee beans separately.
@@ -115,7 +116,7 @@ grid.arrange(p1,p2,p3,ncol=3)
 Figure \ref{fig:box} shows that aroma grade, flavor grade and acidity grade of coffee beans in good quality class tend to be higher than that in poor quality class. Meanwhile, there are some outliers in each plot. In terms of this result, these three variables can be considered as influence factors of coffee quality.
 
 Histograms are also added for checking the distributions of aroma,flavor and acidity grades.
-```{r histgram,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:hist} The histgrams for aroma,flavor and acidity grades", fig.pos = 'H'}
+```{r histgram for three grades,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:hist} The histgrams for aroma,flavor and acidity grades", fig.pos = 'H'}
 h1<-ggplot(data14_tidy,aes(x=aroma,fill='steelblue'))+
   geom_histogram(breaks=seq(5,9,0.2))+
   labs(x='Aroma grade')+
@@ -148,7 +149,7 @@ kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 
 For the purpose of observing whether the harvested year of coffee beans is related to the coffee quality class, a bar plot is made to show the change of the proportion of each quality class during the period from 2010 to 2018. Because the amount of missing data in this column is relatively small, we ignored the missing values and analyzed the data roughly.
-```{r harvested year,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:barplot} The proportion of each quality class in every harvested year", fig.pos = 'H'}
+```{r harvested year,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:barplot2} The proportion of each quality class in every harvested year", fig.pos = 'H'}
 data14.year<-data14_tidy %>%
   select(harvested,Qualityclass) %>%
   na.omit()
@@ -156,7 +157,7 @@ data14.year<-data14_tidy %>%
 plot_xtab(data14.year$Qualityclass,data14.year$harvested,show.values=FALSE,show.total=FALSE,
           axis.labels = c('Good','Poor'),legend.title = 'harvested year')
 ```
-As shown in the Figure \ref{fig:barplot},there are both fluctuation in the proportion of two quality classes during this period. However, we can not find out the regular trends of the two proportions over time from the figure. However, we can not find out the regular trends of the two proportions over time from the figure. Noticing the shapes of bar in the figure, it is obvious that the proportions of good quality coffee beans are much higher in 2010, 2011 and 2018 and that in the rest of years are relatively balanced. We speculated that this may be due to the 59 missing values. For this reason, we could infer that harvested year have a little effect on the coffee quality.
+As shown in the Figure \ref{fig:barplot2},there are both fluctuation in the proportion of two quality classes during this period. However, we can not find out the regular trends of the two proportions over time from the figure. However, we can not find out the regular trends of the two proportions over time from the figure. Noticing the shapes of bar in the figure, it is obvious that the proportions of good quality coffee beans are much higher in 2010, 2011 and 2018 and that in the rest of years are relatively balanced. We speculated that this may be due to the 59 missing values. For this reason, we could infer that harvested year have a little effect on the coffee quality.
 
 Before explore the relationship between the mean altitude of the growers farm and the coffee quality, we need to work with the large amount of missing values in altitude. There are several ways to fill the missing data. The most common two methods are constant replacement and regression interpolation.
 
@@ -212,15 +213,15 @@ From our Exploratory Data Analysis we expect Flavor, Aroma and Acidity to be goo
 
 We then fit the following model, with Qualityclass = Poor as our baseline category.
 
-$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}+ \beta_4 \cdot \textrm{category two defects} +  \beta_5 \cdot \textrm{altitude}$$
+$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}+ \beta_4 \cdot \textrm{category two defects} +  \beta_5 \cdot \textrm{altitude}+  \beta_6 \cdot \textrm{continent}$$
 
 
 ```{r full_model, echo = FALSE, eval = TRUE}
-model_full <- glm(Qualityclass ~ flavor + aroma + acidity + category_two_defects + altitude_mean_meters  ,data = data14_tidy,family = binomial(link = "logit"))
+model_full <- glm(Qualityclass ~ flavor + aroma + acidity + category_two_defects + altitude_mean_meters+continent  ,data = data14_tidy,family = binomial(link = "logit"))
 
 summary(model_full)
 ```
-Here we see that the coefficients for flavor, aroma and acidity are all negative, this suggests that an increase in any of these variables results in a decreased chance of being classified as Poor coffee. flavor is suggested to have the greatest impact on decreased chance. Their p-values also suggest significance. Variables category_two_defects and altitude_mean_meters have very small effects and their p-values suggest they are not significant.
+Here we see that the coefficients for flavor, aroma and acidity are all negative, this suggests that an increase in any of these variables results in a decreased chance of being classified as Poor coffee. flavor is suggested to have the greatest impact on decreased chance. Their p-values also suggest significance. Variables category_two_defects, altitude_mean_meters and continent have very small effects and their p-values suggest they are not significant.
 
 
 We then provide Wald intervals for more inference on the significance of our log(odds).
