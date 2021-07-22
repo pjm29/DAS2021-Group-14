@@ -2,9 +2,13 @@
 Group project 2 for group 14 
 
 # Data
-This file contains two documents of our data set
-dataset14.csv: our original data set (1134 rows; 8 columns)
-daat14_tidy: 'dataset14.csv' after cleaning (1132 rows; 8 columns)
+This file contains three documents of our data set
+
+• dataset14.csv: our original data set (1134 rows; 8 columns)
+
+• daat14_tidy: 'dataset14.csv' after cleaning (1132 rows; 8 columns)
+
+• continent：source from https://www.kaggle.com/andradaolteanu/country-mapping-iso-continent-region
 
 # Source
 Coffee Quality Database(CQD)
