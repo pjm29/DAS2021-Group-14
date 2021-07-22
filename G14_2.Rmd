@@ -1,0 +1,357 @@
+---
+title: "Analysis on the quality of coffee beans"
+author: "Group 14"
+date: "2021/7/12"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE, comment = NA)
+```
+
+```{r libraries}
+library(dplyr)
+library(maps)
+library(RColorBrewer)
+library(ggplot2)
+library(tidyverse)
+library(kableExtra)
+library(gridExtra)
+library(moderndive)
+library(skimr)
+library(sjPlot)
+library(GGally)
+library(knitr)
+library(janitor)
+library(jtools)
+```
+# Introduction {#sec:intro}
+
+This report uses data on coffee quality from the Coffee Quality Database (CQD). Each row of data is recorded by batch and it assumes that each batch of tested coffee beans have equal quantity. The aim is to explore the following features that affect the quality of coffee beans (*Qualityclass* as the binary response variable):
+
+```{r glimpse,echo=FALSE, warning=FALSE}
+data14<-read.csv('dataset14.csv')
+data14$Qualityclass<-factor(data14$Qualityclass,label = c(1,0))
+data14$harvested<-as.factor(data14$harvested)
+glimpse(data14)
+```
+
+The data is stored in *data14.csv*. It should be noted that we mark the "good" and "poor" of the quality of coffee beans as "1" and "0". In this report, we first use different methods to analyze the variables that may affect the quality of coffee beans to preliminarily determine whether the feature is an important factor affecting the quality of coffee beans. Then we use the generalized linear model to further analyze the characteristic variables that cannot be excluded.
+
+# Exploratory Data Analysis {#sec:EDA}
+
+First of all, we first understand our data through the following table to facilitate the selection of appropriate statistical methods.
+```{r Summary statistics,echo=FALSE, message=FALSE, out.width = '70%',paged.print=TRUE}
+#select useful summary statistics of data set
+summary.stat<-skim_without_charts(data14)%>%
+  select(,-c(5:12,16:18))
+
+#convert into table
+options(knitr.kable.NA = '-')
+summary.stat%>%
+  transmute(type=skim_type,variable=skim_variable,n_missing=n_missing,complete_rate=complete_rate,mean=numeric.mean,sd=numeric.sd,min=numeric.p0,max=numeric.p100)%>%
+kable(caption = '\\label{tab:Summary statistics} Summary statistics of the original data set.',
+booktabs = TRUE, align = "c",digit=2) %>%
+kable_styling(font_size = 10, latex_options = "HOLD_position")
+```
+From the information above, we can find that there are some missing values scatter in three columns(1 in *country_of_origin*, 199 in *altitude_mean_meters* and 59 in *harvested*). Specifically, the 1 missing value in column 'country_of_origin', which altitude and harvested year are also unknown. There is no enough evidence to determine its origin country. And the missing data is a small amount, so we could remove this row for retaining the data integrity. In addition, the number of missing values in other two columns are relatively large, they will be handled in the next steps. After removing the missing value in *country_of_origin*, we stored it as *'data14_tidy.csv'*. It still contains 1133 rows and 8 columns and will be used for analyzing in the following part of this report and analyze in turn according to the order of the variables.
+```{r tidy data,echo=FALSE}
+#tidy data:remove NA in country_of_origin
+data14_tidy <-data14 %>% 
+  filter(!is.na(country_of_origin))
+```
+
+**Country of origin**  
+
+Initially, we would like to explore the relationship between countries and quality class of coffee beans. Because the categories of origin country are too large and detailed, a column named *'continent'* was added to the tidy data with the goal of facilitating analysis(the source of the continent data has been represented on our github repository).
+```{r continents, echo=FALSE, warning=FALSE, out.width = "70%", fig.align = "center", fig.cap = "\\label{fig:barplot1} The proportion of each quality class in every continents.", fig.pos = 'H'}
+#select country and its continent; merge continents data set with the data14_tidy
+continent<-read.csv('https://raw.githubusercontent.com/pjm29/DAS2021-Group-14/main/data/continents.csv',header=T)
+continents<-continent%>%
+  select(c(1,6))
+colnames(continents)<-c('country_of_origin','continent')
+data14_tidy<-left_join(data14_tidy,continents,by='country_of_origin')
+data14_tidy[data14_tidy$country_of_origin=='United States (Hawaii)',]$continent<-'Americas'
+data14_tidy[data14_tidy$country_of_origin=='United States (Puerto Rico)',]$continent<-'Americas'
+data14_tidy[data14_tidy$country_of_origin=='Tanzania, United Republic Of',]$continent<-'Africa'
+data14_tidy[data14_tidy$country_of_origin=='Cote d?Ivoire',]$continent<-'Africa'
+data14_tidy$continent<-factor(data14_tidy$continent)
+
+#draw barplots by continents and quality class
+data14.continent<-data14_tidy %>%
+  select(continent,Qualityclass)
+
+plot_xtab(data14.continent$Qualityclass,data14.continent$continent,show.values=FALSE,show.total=FALSE,axis.labels = c('Good','Poor'))
+
+```
+Figure \ref{fig:barplot1} shows that the excellent and good rate of coffee beans in Oceania is 100%. After consulting the data, only one batch of coffee beans came from Oceania and the quality was "good". The data is insufficient and therefore ignored. Among other continents, it can be seen that the quality of coffee beans originating in Africa have the highest proportion (nearly 70%) and the data of the other two continents are similar (nearly 50%). It is not yet possible to explain whether this variable has a sufficient impact on the quality of coffee beans, so it will be discussed later.
+
+**Aroma, Flavor and Acidity**  
+
+Next, we used box plots to explore the relationship between aroma grade, flavor grade, acidity grade and quality class of coffee beans separately. During the exploration, we found that there is an outlier with a value of 0 in each variable, which is not consistent with common sense. After checking the data, they belong to the same batch of coffee beans. Therefore, we speculate that this row of data is caused by statistical errors, and we delete this row for subsequent analysis.
+
+```{r aroma;flavor;acidity,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:box} The relationship between aroma,flavor,acidity and quality class", fig.pos = 'H'}
+data14_tidy <-data14_tidy %>%
+  filter(aroma!=0)
+
+p1<-ggplot(data14_tidy,aes(x=Qualityclass,y=aroma,fill=Qualityclass))+
+  geom_boxplot()+
+  labs(x='Qualityclass',y='Aroma grade')+
+  scale_x_discrete(labels=c('Good','Poor'))+
+  theme(legend.position = "none")
+
+p2<-ggplot(data14_tidy,aes(x=Qualityclass,y=flavor,fill=Qualityclass))+
+  geom_boxplot()+
+  labs(x='Qualityclass',y='Flavor grade')+
+  scale_x_discrete(labels=c('Good','Poor'))+
+  theme(legend.position = "none")
+
+p3<-ggplot(data14_tidy,aes(x=Qualityclass,y=acidity,fill=Qualityclass))+
+  geom_boxplot()+
+  labs(x='Qualityclass',y='Acidity grade')+
+  scale_x_discrete(labels=c('Good','Poor'))+
+  theme(legend.position = "none")
+
+grid.arrange(p1,p2,p3,ncol=3)
+
+```
+Figure \ref{fig:box} shows that aroma grade, flavor grade and acidity grade of coffee beans in good quality class tend to be higher than that in poor quality class. The distribution of outliers are also consistent with this conclusion. In terms of this result, these three variables can be considered as influence factors of coffee quality and will be analyzed later.
+
+**Category_two_defects**  
+
+In this step, table \ref{tab:category_two_defects} indicates the difference of the number of category 2 type defects in each coffee quality class. The number of category 2 type defects in good quality class (582) is slightly more than that in poor quality class (551). It is speculated that this variable has little effect on the quality of coffee beans, which will be confirmed in subsequent analysis.
+```{r category_two_defects,echo=FALSE,warning=FALSE}
+my_skim <- skim_with(base = sfl(n = length)) 
+
+data14_tidy %>%
+group_by(Qualityclass) %>%
+select(category_two_defects, Qualityclass) %>%
+my_skim() %>%
+transmute(Qualityclass=c('Good','Poor'), n=n ) %>%
+kable(caption = '\\label{tab:category_two_defects} Summary statistics on the number of category 2 type defects by quality class.',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+```
+
+**Harvested Year**  
+
+For the purpose of observing whether the harvested year of coffee beans is related to the coffee quality class, a bar plot is made to show the change of the proportion of each quality class during the period from 2010 to 2018. 
+```{r harvested year,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:barplot2} The proportion of each quality class in every harvested year", fig.pos = 'H'}
+data14.year<-data14_tidy %>%
+  select(harvested,Qualityclass) %>%
+  na.omit()
+
+plot_xtab(data14.year$Qualityclass,data14.year$harvested,show.values=FALSE,show.total=FALSE,
+          axis.labels = c('Good','Poor'),legend.title = 'harvested year')
+```
+As shown in the Figure \ref{fig:barplot2},there are both fluctuation in the proportion of two quality classes during this period. However, we can not find out the regular trends of the two proportions over time from the figure. However, we can not find out the regular trends of the two proportions over time from the figure. Noticing the shapes of bar in the figure, it is obvious that the proportions of good quality coffee beans are much higher in 2010, 2011 and 2018 and that in the rest of years are relatively balanced. We speculated that this may be due to the 59 missing values. For this reason, we could infer that harvested year have a little effect on the coffee quality.
+
+**Altitude**  
+
+Before explore the relationship between the mean altitude of the growers farm and the coffee quality, we need to work with the large amount of missing values in altitude. There are several ways to fill the missing data. The most common two methods are constant replacement and regression interpolation.
+
+First, we checked the correlation between altitude and previous four explanatory variables in figure \ref{fig:corr}. The correlation coefficients between altitude and other variables are -0.012, -0.01,0.03 and -0.05 respectively, which are very weak relationship, so we will not take regression method into account.
+
+```{r check correlation ,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:corr} Potential factors for altitude", fig.pos = 'H', warning=FALSE, message=FALSE}
+corr <- data14_tidy %>%
+  select(2:6)%>%
+  na.omit()
+ggpairs(corr)
+```
+
+Then, the constant replacement method will be considered. Due to coffee beans from each country should have similar growing environment and geographical conditions, we choose to use average by each country to deal with missing data of altitude from different area.
+```{r deal with missing values,echo=FALSE, warning=FALSE}
+#the number of NA,mean and median 'altitude_mean_meters' term group by countries
+summary_country_altitude<-data14%>%
+  group_by(country_of_origin)%>%
+  summarize(na=sum(is.na(altitude_mean_meters)),mean=mean(altitude_mean_meters,na.rm = TRUE))
+
+
+#build the table
+altitude_by_country<-na.omit(summary_country_altitude)%>%
+kable(caption = '\\label{tab:Altitude by countries} Summary statistics of the altitudes by country.',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+
+
+#replace NA in column 'altitude_mean_meters' by mean
+countries<-unique(na.omit(summary_country_altitude[summary_country_altitude$na!=0,]$country_of_origin))
+for (i in 1:length(countries)){
+  data14_tidy[data14_tidy$country_of_origin==countries[i],]$altitude_mean_meters[is.na(data14_tidy[data14_tidy$country_of_origin==countries[i],]$altitude_mean_meters)]<-
+    summary_country_altitude$mean[which(summary_country_altitude$country_of_origin==countries[i])]
+}
+
+```
+After the process of filling the missing data, a box plot is built for visualizing the effect of altitude on coffee qualify class. 
+```{r altitude ,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:box2} Altitude by coffee qualify class", fig.pos = 'H', warning=FALSE, message=FALSE}
+#for clear visualization, removing 11 points which altitude >6000 in the plot
+#nrow(data14_tidy[data14_tidy$altitude_mean_meters>6000,])
+ggplot(data14_tidy[data14_tidy$altitude_mean_meters<=6000,],aes(x=Qualityclass,y=altitude_mean_meters,fill=Qualityclass))+
+  geom_boxplot()+
+  labs(x='Quality class',y='Altitude')+
+  scale_x_discrete(labels=c('Good','Poor'))+
+  theme(legend.position = "none")
+```
+Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualify class tend to be slightly higher than that in poor qualify class in general. In addition, the mean altitude of the cultivation of good coffee beans is more concentrated than the distribution of poor quality coffee beans. Therefore, it can be inferred that the average altitude in good quality class is more suitable for high-quality output of coffee beans. Manufacturers can choose planting locations to improve the quality of coffee beans.
+
+
+# Formal Data Analysis {#sec:FDA}
+
+We will apply a Binomial Generalised Linear Model and then consider the logit link on the basis of the assumption that $Y_i$ represents a binary response variable and the observations are independent.
+
+From our Exploratory Data Analysis we expect *Flavor*, *Aroma* and *Acidity* to be good predictors of Qualityclass. It is seen that *Continent (Country of origin)*, *Altitude* and *Category Two Defects* may have some effect, so they are also included. The model, with Qualityclass = Poor as the baseline category, is fitted below.
+
+$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}+ \beta_4 \cdot \textrm{category two defects} +  \beta_5 \cdot \textrm{altitude}+  \beta_6 \cdot \textrm{continent}$$
+
+
+```{r full_model, echo = FALSE, eval = TRUE}
+model_full <- glm(Qualityclass ~ flavor + aroma + acidity + category_two_defects + altitude_mean_meters+continent  ,data = data14_tidy,family = binomial(link = "logit"))
+
+summary(model_full)
+```
+
+It shows that the coefficients for *flavor*, *aroma* and *acidity* are all negative, this suggests that an increase in any of these variables results in a decreased chance of being classified as 'Poor' coffee beans. *Flavor* is suggested to have the greatest impact on decreased chance. Their p-values also suggest significance. Variables *category_two_defects*, *altitude_mean_meters* and *continent* have very small effects and their p-values suggest they are not significant.
+
+
+We then provide Wald intervals for more inference on the significance of our log(odds).
+
+```{r wald, echo = FALSE, eval = TRUE,fig.align = "center"}
+confint.default(model_full) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+    kable(caption = '\\label{tab:wald} Wald Confidence Intervals for log odds in our Full Model',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+```
+
+The Wald Intervals for our first three variables do not contain 0 so we will keep them in the model. Intervals for the variables *continents*, *category_two_defects* and *altitude_mean_meters* contain 0, further evidence that they are not significant terms. 
+
+We drop insignificant terms from the model and fit the following model,
+
+$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}$$
+```{r model_1, echo = FALSE, eval = TRUE}
+model_1 <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "logit"))
+
+
+summary(model_1)
+```
+
+```{r wald2, echo = FALSE, eval = TRUE}
+confint.default(model_1) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+    kable(caption = '\\label{tab:wald1} Wald Confidence Intervals for log odds in Model 1',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "HOLD_position")
+```
+
+We see that *flavor*, *aroma* and *acidity* are still all significant and have similar coefficients and effects to the previous model. Our AIC (692.44) however is quite high. 
+
+To explore other options we then fit a model with an interaction between flavor and aroma which is a natural choice.
+
+$$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity} +\beta_4 \cdot \textrm{(flavor*aroma)} $$
+
+
+```{r score_model_int, echo = FALSE, eval = TRUE}
+model_2_int <- glm(Qualityclass ~ flavor + aroma + acidity + flavor*aroma ,data = data14_tidy,family = binomial(link = "logit"))
+summary(model_2_int)
+```
+
+```{r wald_int, echo = FALSE, eval = TRUE}
+confint.default(model_2_int) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable(caption = '\\label{tab:wald3} Wald Confidence Intervals for log odds in Model 2',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "HOLD_position")
+```
+
+Here all terms are significant, fitting the interaction has increased the negative effect of being classified as Poor for Flavor and Aroma. Whilst the interaction itself has a positive effect on the chances of being classified as poor. The AIC is lower than that of Model 1 however we are wary of overfitting with the interaction term.
+
+Next, we intend to fit a model with probit link function. First, it is necessary to check whether the distribution of these three variables comply with the normal distribution.
+
+```{r histgram for three grades,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:hist} The histgrams for aroma,flavor and acidity grades", fig.pos = 'H'}
+h1<-ggplot(data14_tidy,aes(x=aroma,fill='steelblue'))+
+  geom_histogram(breaks=seq(5,9,0.2))+
+  labs(x='Aroma grade')+
+  theme(legend.position = "none")
+h2<-ggplot(data14_tidy,aes(x=flavor,fill='steelblue'))+
+  geom_histogram(breaks=seq(5,9,0.2))+
+  labs(x='Flavor grade')+
+  theme(legend.position = "none")
+h3<-ggplot(data14_tidy,aes(x=acidity,fill='steelblue'))+
+  geom_histogram(breaks=seq(5,9,0.2))+
+  labs(x='Acidity grade')+
+  theme(legend.position = "none")
+
+  grid.arrange(h1,h2,h3,nrow=3)
+
+```
+
+Figure \ref{fig:hist} suggests that flavor, aroma and acidity follow an approximately normal distribution. Therefore, the results of our implementation of the probit link function model are as follows.
+
+```{r model_3_probit, echo = FALSE, eval = TRUE}
+model_3_probit <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "probit"))
+summary(model_3_probit)
+```
+
+```{r wald_prob, echo = FALSE, eval = TRUE}
+confint.default(model_3_probit) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable(caption = '\\label{tab:wald4} Wald Confidence Intervals for log odds in Model 3',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "HOLD_position")
+```
+
+All terms are significant as in the other models, however both AIC (707.45) and Deviance (699.45) are higher than in the others. We follow this with the cloglog model.
+
+```{r model_4_cloglog, echo = FALSE, eval = TRUE}
+model_4_cloglog <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "cloglog"))
+summary(model_4_cloglog)
+```
+
+```{r wald_clog, echo = FALSE, eval = TRUE}
+confint.default(model_4_cloglog) %>% # confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+  kable(caption = '\\label{tab:wald5} Wald Confidence Intervals for log odds in Model 4',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "HOLD_position")
+```
+
+Here again we find all terms significant and a low AIC (673.57) and Deviance (665.57) relative to the other models.
+
+
+We compare the 4 significant models fitted.
+
+
+```{r model_selection,echo=FALSE, eval = TRUE}
+model.comp.scores <- glance(model_1)
+model.comp.int <- glance(model_2_int)
+model.comp.probit <- glance(model_3_probit)
+model.comp.cloglog <- glance(model_4_cloglog)
+Models <- c("Model (adjusted)","Model (Interaction)","Model (Probit)", "Model (cloglog)")
+bind_rows(model.comp.scores, model.comp.int,
+          model.comp.probit,model.comp.cloglog,.id="Model") %>%
+  select(Model,deviance,AIC,BIC) %>%
+  mutate(Model=Models) %>%
+  kable(
+    digits = 2,
+    caption = "\\label{tab:model_comp} Comparison of models by Deviance, AIC and BIC") %>%
+  kable_styling(font_size = 10, latex_options = "HOLD_position")
+
+```
+Table \ref{tab:model_comp} provides us with model diagnostics for the 4 models fitted. We see that the Model 4 has the lowest AIC and Deviance and that Model 3 has the highest Deviance and AIC. Since we are modeling a binary response Deviance is not a useful measure for goodness of fit. 
+
+We decide on Model 1 even though it has the 3rd highest AIC, since it is the simplest and has the most interpretable link function.
+
+Looking at the odds ratios of Model 1 below.
+
+```{r odds_plot2,echo = FALSE, fig.cap = "\\label{fig:OR} Odds Ratios for Model 1",fig.pos = 'H',out.width = '100%'}
+# plot of odds ratios
+plot_model(model_1, show.values = TRUE, 
+title = "", show.p = TRUE)
+```
+
+Figure \ref{fig:odds_plot2} shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for *flavor*, *aroma* and *acidity* their odds of being classified as poor decrease (by factors close to 0). 
+
+# Conclusion {#sec:Conc}
+
+In conclusion, after our analysis, the main features that affect the quality of coffee beans are their *flavor*, *aroma* and *acidity*. These features can be used as a significant basis to infer the quality of coffee beans. It can be understood that the more prominent these features of coffee beans, the greater the probability that their quality is better. In addition, the origin, harvest year and altitude of the coffee beans are not the main factors affecting their quality. 
+
+In further analysis we could account for the effects of the country the beans were from as well as the year it was harvested with spatio-temporal methods. We could explore the collinearity further as well as try to predict and classify future unseen coffee beans.
+
+
