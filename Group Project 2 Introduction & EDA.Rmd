@@ -224,7 +224,7 @@ Here we see that the coefficients for flavor, aroma and acidity are all negative
 
 
 We then provide Wald intervals for more inference on the significance of our log(odds).
-```{r wald, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:CI} The Wald Confidence Intervals for our log(odds) in our Full Model"}
+```{r wald, echo = FALSE, eval = TRUE,fig.align = "center"}
 confint.default(model_full) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
     kable(caption = '\\label{tab:wald} Wald Confidence Intervals for log odds in our Full Model',
 booktabs = TRUE, linesep = "") %>%
@@ -245,20 +245,20 @@ model_1 <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,famil
 summary(model_1)
 ```
 
-With confidence intervals of
-
-```{r wald2, echo = FALSE, eval = TRUE,fig.align = "center"}
+```{r wald2, echo = FALSE, eval = TRUE}
 confint.default(model_1) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
     kable(caption = '\\label{tab:wald1} Wald Confidence Intervals for log odds in Model 1',
 booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
 ```
 
-We see that flavor, aroma and acidity are still all significant and have similar coefficients. Our deviance however is quite high.
+We see that flavor, aroma and acidity are still all significant and have similar coefficients and effects to the previous model. Our AIC however is quite high. 
 
-To explore other options we then fit a model with an interaction between flavor and aroma, since this makes intuitive sense.
+To explore other options we then fit a model with an interaction, interaction between flavor and aroma is a natural choice.
 
 $$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity} +\beta_4 \cdot \textrm{(flavor*aroma)} $$
+
+
 ```{r score_model_int, echo = FALSE, eval = TRUE}
 model_2_int <- glm(Qualityclass ~ flavor + aroma + acidity + flavor*aroma ,data = data14_tidy,family = binomial(link = "logit"))
 summary(model_2_int)
