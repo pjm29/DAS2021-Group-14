@@ -38,7 +38,7 @@ data14$harvested<-as.factor(data14$harvested)
 glimpse(data14)
 ```
 
-The data is stored in *data14.csv*. It should be noted that we mark the "good" and "poor" of the quality of coffee beans as "1" and "0". In this report, we first use different methods to analyze the variables that may affect the quality of coffee beans to preliminarily determine whether the feature is an important factor affecting the quality of coffee beans. Then we use the generalized linear model to further analyze the characteristic variables that cannot be excluded.
+The data is stored in *data14.csv*. It should be noted that we mark the "good" and "poor" of the quality of coffee beans as "1" and "0". In this report, we first use different methods to analyze the variables that may affect the quality of coffee beans to preliminarily determine whether the feature is an important factor affecting the quality of coffee beans. Then we use the generalized linear model to further analyze the feature variables that cannot be excluded.
 
 # Exploratory Data Analysis {#sec:EDA}
 
