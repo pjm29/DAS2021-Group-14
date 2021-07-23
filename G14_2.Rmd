@@ -1,7 +1,6 @@
 ---
 title: "Analysis on the quality of coffee beans"
 author: "Group 14"
-date: "2021/7/12"
 output:
   pdf_document: default
   html_document:
@@ -117,7 +116,7 @@ p3<-ggplot(data14_tidy,aes(x=Qualityclass,y=acidity,fill=Qualityclass))+
 grid.arrange(p1,p2,p3,ncol=3)
 
 ```
-Figure \ref{fig:box} shows that aroma grade, flavor grade and acidity grade of coffee beans in good quality class tend to be higher than that in poor quality class. The distribution of outliers are also consistent with this conclusion. In terms of this result, these three variables can be considered as influence factors of coffee quality and will be analyzed later.
+Figure \ref{fig:box} shows that aroma grade, flavor grade and acidity grade of coffee beans in good quality class tend to be higher than that in poor quality class. The distribution of outliers is also consistent with this conclusion. In terms of this result, these three variables can be considered as influence factors of coffee quality and will be analyzed later.
 
 **Category_two_defects**  
 
@@ -230,8 +229,7 @@ We drop insignificant terms from the model and fit the following model,
 
 $$ln\left(\frac{p_{poor}}{1-p_{poor}}\right) = \alpha + \beta_1 \cdot \textrm{flavor} + \beta_2 \cdot \textrm{aroma} + \beta_3 \cdot \textrm{acidity}$$
 ```{r model_1, echo = FALSE, eval = TRUE}
-model_1 <- glm(Qualityclass ~ flavor + aroma + acidity ,data = data14_tidy,family = binomial(link = "logit"))
-
+model_1 <- glm(Qualityclass ~ flavor + aroma + acidity, data = data14_tidy,family = binomial(link = "logit"))
 
 summary(model_1)
 ```
@@ -267,16 +265,16 @@ Here all terms are significant, fitting the interaction has increased the negati
 Next, we intend to fit a model with probit link function. First, it is necessary to check whether the distribution of these three variables comply with the normal distribution.
 
 ```{r histgram for three grades,echo=FALSE, out.width = '70%', fig.align = "center", fig.cap = "\\label{fig:hist} The histgrams for aroma,flavor and acidity grades", fig.pos = 'H'}
-h1<-ggplot(data14_tidy,aes(x=aroma,fill='steelblue'))+
-  geom_histogram(breaks=seq(5,9,0.2))+
+h1<-ggplot(data14_tidy,aes(x=aroma))+
+  geom_histogram(breaks=seq(5,9,0.2),fill='steelblue')+
   labs(x='Aroma grade')+
   theme(legend.position = "none")
-h2<-ggplot(data14_tidy,aes(x=flavor,fill='steelblue'))+
-  geom_histogram(breaks=seq(5,9,0.2))+
+h2<-ggplot(data14_tidy,aes(x=flavor))+
+  geom_histogram(breaks=seq(5,9,0.2),fill='steelblue')+
   labs(x='Flavor grade')+
   theme(legend.position = "none")
-h3<-ggplot(data14_tidy,aes(x=acidity,fill='steelblue'))+
-  geom_histogram(breaks=seq(5,9,0.2))+
+h3<-ggplot(data14_tidy,aes(x=acidity))+
+  geom_histogram(breaks=seq(5,9,0.2),fill='steelblue')+
   labs(x='Acidity grade')+
   theme(legend.position = "none")
 
@@ -348,10 +346,29 @@ title = "", show.p = TRUE)
 
 Figure \ref{fig:odds_plot2} shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for *flavor*, *aroma* and *acidity* their odds of being classified as poor decrease (by factors close to 0). 
 
+We now plot the predicted probabilities of poor quality class for each of the variable in our model
+
+```{r plot_flav, echo = FALSE, eval = TRUE, fig.align="center",fig.pos="H"}
+p1 <- plot_model(model_1,type="pred", par = c(1, 3))$flavor
+
+p2 <- plot_model(model_1,type="pred", par = c(1, 3))$aroma
+
+p3 <- plot_model(model_1,type="pred", par = c(1, 3))$acidity
+grid.arrange(p1,p2,p3,nrow=3)
+```
+In Figure 8,the top figure shows us the predicted probabilities of being classified as Poor for values of Flavor, we see anything less than a 7 is classified poor and anything greater than 8 is classified as Good. The general trend is that which we have already suggested, as Flavor increases the probability of being classified as Poor decreases.
+
+The middle figure shows us the predicted probabilities of being classified as Poor for values of Aroma, we see anything less than a 6.5 is classified poor, however we do not see as distinct tails as in Figure 8 and cannot give such a distinct rule for being classified as good. The general trend is that which we have already suggested, as Aroma increases the probability of being classified as Poor decreases.
+
+The bottom figure shows us the predicted probabilities of being classified as Poor for values of Aroma, we see anything less than a 6 is classified poor, however we do not see as distinct tails as in Figure 8 and cannot give such a distinct rule for being classified as good. The general trend is that which we have already suggested, as Aroma increases the probability of being classified as Poor decreases.
+
 # Conclusion {#sec:Conc}
 
 In conclusion, after our analysis, the main features that affect the quality of coffee beans are their *flavor*, *aroma* and *acidity*. These features can be used as a significant basis to infer the quality of coffee beans. It can be understood that the more prominent these features of coffee beans, the greater the probability that their quality is better. In addition, the origin, harvest year and altitude of the coffee beans are not the main factors affecting their quality. 
 
+Flavor has the strongest effect on predicted probability of classification, with log odds coefficient `r model_1$coefficients[2]` visualized in Figure 8. It means the log-odds of coffee beans are in poor quality decrease by 7.29 units for every one unit increase in flavor grades.
+
+Aroma has the second strongest effect, with log odds coefficient `r model_1$coefficients[3]` and Acidity the weakest, with log odds coefficient `r model_1$coefficients[4]`. Visualized in Figures 9 and 10 respectively, which indicates 
+the log-odds of coffee beans are in poor quality decrease by 4.23 units for every one unit increase in aroma grades and decrease by 3.39 units for every one unit increase in acidity grades respectively.
+
 In further analysis we could account for the effects of the country the beans were from as well as the year it was harvested with spatio-temporal methods. We could explore the collinearity further as well as try to predict and classify future unseen coffee beans.
-
-
