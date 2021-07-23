@@ -207,7 +207,7 @@ Figure \ref{fig:box2} shows that the altitude of the growers farm in good qualif
 
 # Formal Data Analysis {#sec:FDA}
 
-We will apply a Binomial Generalised Linear Model and we will initially consider the logit link. We assume this model since we have a binary response variable $Y_i$ and we have independent observations. There is some evidence of collinearity which we will ignore for now.
+We will apply a Binomial Generalised Linear Model and we will initially consider the logit link. We assume this model since we have a binary response variable $Y_i$ and we have independent observations. Figure \ref{fig:corr} suggests there is some evidence of collinearity which we will ignore for now.
 
 From our Exploratory Data Analysis we expect Flavor, Aroma and Acidity to be good predictors of Qualityclass. We also have seen that Altitude and Category Two Defects may have some effect, so they are also included. 
 
@@ -248,7 +248,7 @@ summary(model_1)
 
 ```{r wald2, echo = FALSE, eval = TRUE}
 confint.default(model_1) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
-    kable(caption = '\\label{tab:wald1} Wald Confidence Intervals for log odds in Model 1',
+    kable(caption = '\\label{tab:wald2} Wald Confidence Intervals for log odds in Model 1',
 booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
 ```
@@ -267,7 +267,7 @@ summary(model_2_int)
 
 ```{r wald_int, echo = FALSE, eval = TRUE}
 confint.default(model_2_int) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
-  kable(caption = '\\label{tab:wald3} Wald Confidence Intervals for log odds in Model 2',
+  kable(caption = '\\label{tab:wald_int} Wald Confidence Intervals for log odds in Model 2',
 booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
 ```
@@ -284,7 +284,7 @@ summary(model_3_probit)
 
 ```{r wald_prob, echo = FALSE, eval = TRUE}
 confint.default(model_3_probit) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
-  kable(caption = '\\label{tab:wald4} Wald Confidence Intervals for log odds in Model 3',
+  kable(caption = '\\label{tab:wald_prob} Wald Confidence Intervals for log odds in Model 3',
 booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
 ```
@@ -298,7 +298,7 @@ summary(model_4_cloglog)
 
 ```{r wald_clog, echo = FALSE, eval = TRUE}
 confint.default(model_4_cloglog) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
-  kable(caption = '\\label{tab:wald5} Wald Confidence Intervals for log odds in Model 4',
+  kable(caption = '\\label{tab:wald_clog} Wald Confidence Intervals for log odds in Model 4',
 booktabs = TRUE, linesep = "") %>%
 kable_styling(font_size = 10, latex_options = "hold_position")
 ```
@@ -331,7 +331,7 @@ Table \ref{tab:model_comp} provides us with model diagnostics for the 4 models f
 
 We decide on Model 1 even though it has the 3rd highest AIC, since it is the simplest and has the most interpretable link function.
 
-Looking at the odds ratios of Model 1 we see
+Looking at the odds ratios of Model 1 we have
 
 
 ```{r odds_plot2,echo = FALSE, fig.cap = "\\label{fig:OR} Odds Ratios for Model 1",fig.pos = 'H',out.width = '100%'}
@@ -340,11 +340,40 @@ plot_model(model_1, show.values = TRUE,
 title = "", show.p = TRUE)
 ```
 
+With corresponding 95% Wald Confidence Intervals
+
+```{r wald5, echo = FALSE, eval = TRUE}
+exp(confint.default(model_1)) %>% #confint.default calculates wald confidence intervals since logistic regression is asymptotically normal 
+    kable(caption = '\\label{tab:wald1} Wald Confidence Intervals for Odds Ratios of Model 1',
+booktabs = TRUE, linesep = "") %>%
+kable_styling(font_size = 10, latex_options = "hold_position")
+```
+
 Figure \ref{fig:odds_plot2} shows odds very close 0 for each of the 3 variables, that is to say, for each unit increase in score for flavor, aroma and acidity their odds of being classified as poor decrease (by factors close to 0).
+
+We now plot the predicited probabilities of classification for each of the variable in our model
+
+```{r plot_flav, echo = FALSE, eval = TRUE, fig.cap = "\\label{fig:Pred.flav} Predicted Probabilities of being classified as QualityClass Poor for Flavor Variable", fig.align="center",fig.pos="H"}
+plot_model(model_1,type="pred")
+```
+Figure 8 shows us the predicted probabilities of being classified as Poor for values of Flavor, we see anything less than a 7 is classified poor and anything greater than 8 is classified as Good. The general trend is that which we have already suggested, as Flavor increases the probability of being classified as Poor decreases.
+
+
+
+
+Figure 9 shows us the predicted probabilities of being classified as Poor for values of Aroma, we see anything less than a 6.5 is classified poor, however we do not see as distinct tails as in Figure 8 and cannot give such a distinct rule for being classified as good. The general trend is that which we have already suggested, as Aroma increases the probability of being classified as Poor decreases.
+
+
+
+Figure 10 shows us the predicted probabilities of being classified as Poor for values of Aroma, we see anything less than a 6 is classified poor, however we do not see as distinct tails as in Figure 8 and cannot give such a distinct rule for being classified as good. The general trend is that which we have already suggested, as Aroma increases the probability of being classified as Poor decreases.
 
 # Conclusion {#sec:Conc}
 
-In conclusion we have found that increasing Flavor, Aroma and Acidity in coffee beans significantly reduces the chances of being classified as Poor Quality. Whilst Altitude and Number of Category 2 Defects have no significant effect
+In conclusion we have found that increasing Flavor, Aroma and Acidity in coffee beans significantly reduces the chances of being classified as Poor Quality. Whilst Altitude and Number of Category 2 Defects have no significant effect. 
+
+Flavour has the strongest effect on predicted probability of classification, with log odds coefficient `r model_1$coefficients[2]` visualised in Figure 8. 
+
+Aroma has the second strongest effect, with log odds coefficient `r model_1$coefficients[3]` and Acidity the weakest, with log odds coefficient `r model_1$coefficients[4]`. Visualised in Figures 9 and 10 respectively.
 
 In further analysis we could account for the effects of the country the beans were from as well as the year it was harvested with spatio-temporal methods. We could explore the collinearity further as well as try to predict and classify future unseen coffee beans.
 
